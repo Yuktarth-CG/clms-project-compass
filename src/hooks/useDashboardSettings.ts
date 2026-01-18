@@ -21,7 +21,7 @@ export const useDashboardSettings = () => {
   const [settings, setSettings] = useState<Record<string, boolean>>({
     show_status_summary: true,
     show_accomplishments: true,
-    show_team: true,
+    show_team: false, // Changed default to false
     show_pipeline: true,
   });
   const [loading, setLoading] = useState(true);

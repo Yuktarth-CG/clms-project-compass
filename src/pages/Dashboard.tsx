@@ -104,10 +104,10 @@ const Dashboard = () => {
           </p>
         </div>
 
+        {settings.show_accomplishments && <AccomplishmentsSection accomplishments={accomplishments} projects={projects} />}
         <RiskPanel risks={risks} />
 
         {settings.show_team && <TeamSection teamMembers={teamMembers} />}
-        {settings.show_accomplishments && <AccomplishmentsSection accomplishments={accomplishments} projects={projects} />}
         {settings.show_status_summary && (
           <StatusSummary 
             projects={projects} 
@@ -116,8 +116,6 @@ const Dashboard = () => {
           />
         )}
         
-        {/* PipelineSection removed, now on its own page */}
-
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <CategoryFilter 
