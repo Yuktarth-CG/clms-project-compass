@@ -489,15 +489,7 @@ const Admin = () => {
                         onCheckedChange={(v) => updateSetting('show_accomplishments', v)}
                       />
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="show_team" className="cursor-pointer">Show Team Section</Label>
-                      <Switch
-                        id="show_team"
-                        checked={settings.show_team}
-                        onCheckedChange={(v) => updateSetting('show_team', v)}
-                      />
-                    </div>
+                    {/* Removed 'Show Team Section' toggle from Admin */}
                   </div>
                 </CardContent>
               </Card>

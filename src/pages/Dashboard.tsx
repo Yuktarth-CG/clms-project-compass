@@ -15,14 +15,16 @@ import { useRisks } from '@/hooks/useRisks';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAccomplishments } from '@/hooks/useAccomplishments';
 import { useDashboardSettings } from '@/hooks/useDashboardSettings';
-import { LayoutGrid, TrendingUp, Loader2 } from 'lucide-react';
+import { LayoutGrid, TrendingUp, Loader2, Users } from 'lucide-react'; // Import Users icon
+import { Switch } from '@/components/ui/switch'; // Import Switch
+import { Label } from '@/components/ui/label'; // Import Label
 
 const Dashboard = () => {
   const { projects, loading: projectsLoading, updateProject, addProject } = useProjects();
   const { risks, loading: risksLoading } = useRisks();
   const { teamMembers, loading: teamLoading } = useTeamMembers();
   const { accomplishments, loading: accomplishmentsLoading } = useAccomplishments();
-  const { settings } = useDashboardSettings();
+  const { settings, updateSetting } = useDashboardSettings(); // Get updateSetting
   const [categoryFilter, setCategoryFilter] = useState<ProjectCategory | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -107,7 +109,22 @@ const Dashboard = () => {
         {settings.show_accomplishments && <AccomplishmentsSection accomplishments={accomplishments} projects={projects} />}
         <RiskPanel risks={risks} />
 
-        {settings.show_team && <TeamSection teamMembers={teamMembers} />}
+        {/* Team Section with toggle */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <Label htmlFor="show_team_toggle" className="cursor-pointer">Show Team Section</Label>
+            </div>
+            <Switch
+              id="show_team_toggle"
+              checked={settings.show_team}
+              onCheckedChange={(v) => updateSetting('show_team', v)}
+            />
+          </div>
+          {settings.show_team && <TeamSection teamMembers={teamMembers} />}
+        </div>
+
         {settings.show_status_summary && (
           <StatusSummary 
             projects={projects} 
