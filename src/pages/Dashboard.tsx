@@ -114,7 +114,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
-              <Label htmlFor="show_team_toggle" className="cursor-pointer">Show Team Section</Label>
+              <Label htmlFor="show_team_toggle" className="cursor-pointer">The Team</Label>
             </div>
             <Switch
               id="show_team_toggle"
