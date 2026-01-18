@@ -19,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, FolderKanban, Loader2, Settings, Trophy, Users, Inbox, XCircle, Calendar } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, FolderKanban, Loader2, Settings, Trophy, Users, XCircle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDateFormat } from '@/contexts/DateFormatContext';
 
@@ -49,28 +49,17 @@ const Admin = () => {
     }
   }, [navigate]);
 
-  // Separate pipeline projects from timeline projects
-  const { pipelineProjects, timelineProjects } = (() => {
-    const pipeline: Project[] = [];
-    const timeline: Project[] = [];
-    projects.forEach((project) => {
+  // Filter projects that have any dates for the timeline tab
+  const timelineProjects = useMemo(() => {
+    return projects.filter((project) => {
       const hasAnyDate = STAGE_ORDER.some((stage) => 
         project.stages[stage].startDate || project.stages[stage].endDate
       );
-      if (hasAnyDate) {
-        timeline.push(project);
-      } else {
-        pipeline.push(project);
-      }
+      return hasAnyDate;
     });
-    return { pipelineProjects: pipeline, timelineProjects: timeline };
-  })();
+  }, [projects]);
 
   const filteredTimelineProjects = timelineProjects.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredPipelineProjects = pipelineProjects.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -144,7 +133,7 @@ const Admin = () => {
 
   const loading = projectsLoading || risksLoading || accomplishmentsLoading || teamLoading;
 
-  const ProjectCard = ({ project, showStages = true }: { project: Project; showStages?: boolean }) => (
+  const ProjectCard = ({ project }: { project: Project }) => (
     <Card className={cn("hover:bg-secondary/30 transition-colors", project.discarded && "opacity-60")}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
@@ -160,25 +149,23 @@ const Admin = () => {
                 <span className="text-xs text-muted-foreground">(Discarded)</span>
               )}
             </div>
-            {showStages && (
-              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                {STAGE_ORDER.map((stage) => {
-                  const hasData = project.stages[stage].startDate;
-                  return (
-                    <span
-                      key={stage}
-                      className={cn(
-                        'px-2 py-0.5 rounded',
-                        hasData ? 'bg-secondary' : 'bg-secondary/50 opacity-50'
-                      )}
-                    >
-                      {STAGE_LABELS[stage]}
-                      {hasData && ': ✓'}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {STAGE_ORDER.map((stage) => {
+                const hasData = project.stages[stage].startDate;
+                return (
+                  <span
+                    key={stage}
+                    className={cn(
+                      'px-2 py-0.5 rounded',
+                      hasData ? 'bg-secondary' : 'bg-secondary/50 opacity-50'
+                    )}
+                  >
+                    {STAGE_LABELS[stage]}
+                    {hasData && ': ✓'}
+                  </span>
+                );
+              })}
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Button
@@ -220,7 +207,7 @@ const Admin = () => {
             Admin Panel
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Manage projects, pipeline, risks, accomplishments and team
+            Manage projects, risks, accomplishments and team
           </p>
         </div>
 
@@ -231,11 +218,8 @@ const Admin = () => {
         ) : (
           <Tabs defaultValue="projects" className="space-y-6">
             <TabsList className="bg-secondary flex-wrap h-auto gap-1 p-1">
-              <TabsTrigger value="projects">Timeline ({timelineProjects.length})</TabsTrigger>
-              <TabsTrigger value="pipeline" className="flex items-center gap-1">
-                <Inbox className="w-3.5 h-3.5" />
-                Pipeline ({pipelineProjects.length})
-              </TabsTrigger>
+              <TabsTrigger value="projects">Timeline Projects ({timelineProjects.length})</TabsTrigger>
+              {/* Pipeline tab removed, now a separate page */}
               <TabsTrigger value="risks">Risks ({risks.length})</TabsTrigger>
               <TabsTrigger value="accomplishments" className="flex items-center gap-1">
                 <Trophy className="w-3.5 h-3.5" />
@@ -279,48 +263,6 @@ const Admin = () => {
                 ) : (
                   filteredTimelineProjects.map((project) => (
                     <ProjectCard key={project.id} project={project} />
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Pipeline Projects Tab */}
-            <TabsContent value="pipeline" className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search pipeline projects..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Button onClick={() => { setEditingProject(null); setProjectFormOpen(true); }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add to Pipeline
-                </Button>
-              </div>
-
-              <Card className="bg-secondary/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
-                    <Inbox className="w-4 h-4" />
-                    Projects awaiting dates - Click edit to add timeline dates
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-
-              <div className="grid gap-3">
-                {filteredPipelineProjects.length === 0 ? (
-                  <Card>
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      No projects in pipeline
-                    </CardContent>
-                  </Card>
-                ) : (
-                  filteredPipelineProjects.map((project) => (
-                    <ProjectCard key={project.id} project={project} showStages={false} />
                   ))
                 )}
               </div>

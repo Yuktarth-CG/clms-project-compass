@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { isAuthenticated, clearAuthToken } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { LogIn, LogOut, Settings, LayoutDashboard, Inbox } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const Header = () => {
@@ -29,6 +29,12 @@ export const Header = () => {
           <ThemeToggle />
           {authenticated ? (
             <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/pipeline">
+                  <Inbox className="w-4 h-4 mr-2" />
+                  Pipeline
+                </Link>
+              </Button>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/admin">
                   <Settings className="w-4 h-4 mr-2" />
