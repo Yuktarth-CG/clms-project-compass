@@ -1,0 +1,232 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CLMS Project Planner Design System
+   Dark dashboard aesthetic with lifecycle stage colors
+*/
+
+@layer base {
+  :root {
+    /* Core palette - Light mode */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 199 89% 48%;
+
+    --radius: 0.5rem;
+
+    /* Lifecycle Stage Colors */
+    --stage-requirement: 226 70% 55%;
+    --stage-design: 271 81% 56%;
+    --stage-development: 187 92% 41%;
+    --stage-qa: 38 92% 50%;
+    --stage-release: 152 69% 41%;
+
+    /* Category Colors */
+    --category-content: 199 89% 48%;
+    --category-vanilla: 271 81% 56%;
+    --category-enhancement: 152 69% 41%;
+
+    /* Risk Severity */
+    --risk-low: 152 69% 41%;
+    --risk-medium: 38 92% 50%;
+    --risk-high: 25 95% 53%;
+    --risk-critical: 0 72% 51%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 199 89% 48%;
+
+    /* Timeline specific */
+    --timeline-grid: 220 13% 91%;
+    --timeline-today: 199 89% 48%;
+  }
+
+  .dark {
+    /* Core palette - Dark mode */
+    --background: 222 47% 6%;
+    --foreground: 210 20% 95%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 222 47% 6%;
+
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 20% 85%;
+
+    --muted: 222 30% 12%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 199 89% 48%;
+    --accent-foreground: 222 47% 6%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 222 30% 16%;
+    --input: 222 30% 14%;
+    --ring: 199 89% 48%;
+
+    /* Lifecycle Stage Colors */
+    --stage-requirement: 226 70% 55%;
+    --stage-design: 271 81% 56%;
+    --stage-development: 187 92% 41%;
+    --stage-qa: 38 92% 50%;
+    --stage-release: 152 69% 41%;
+
+    /* Category Colors */
+    --category-content: 199 89% 48%;
+    --category-vanilla: 271 81% 56%;
+    --category-enhancement: 152 69% 41%;
+
+    /* Risk Severity */
+    --risk-low: 152 69% 41%;
+    --risk-medium: 38 92% 50%;
+    --risk-high: 25 95% 53%;
+    --risk-critical: 0 72% 51%;
+
+    /* Sidebar */
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 30% 12%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 222 30% 14%;
+    --sidebar-ring: 199 89% 48%;
+
+    /* Timeline specific */
+    --timeline-grid: 222 30% 12%;
+    --timeline-today: 199 89% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .stage-requirement {
+    background-color: hsl(226 70% 55%);
+  }
+
+  .stage-design {
+    background-color: hsl(271 81% 56%);
+  }
+
+  .stage-development {
+    background-color: hsl(187 92% 41%);
+  }
+
+  .stage-qa {
+    background-color: hsl(38 92% 50%);
+  }
+
+  .stage-release {
+    background-color: hsl(152 69% 41%);
+  }
+
+  .risk-badge {
+    @apply px-2 py-0.5 text-xs font-medium rounded-full uppercase tracking-wider;
+  }
+
+  .risk-low {
+    background-color: hsl(var(--risk-low) / 0.15);
+    color: hsl(var(--risk-low));
+  }
+
+  .risk-medium {
+    background-color: hsl(var(--risk-medium) / 0.15);
+    color: hsl(var(--risk-medium));
+  }
+
+  .risk-high {
+    background-color: hsl(var(--risk-high) / 0.15);
+    color: hsl(var(--risk-high));
+  }
+
+  .risk-critical {
+    background-color: hsl(var(--risk-critical) / 0.15);
+    color: hsl(var(--risk-critical));
+  }
+
+  .category-badge {
+    @apply px-2 py-0.5 text-xs font-medium rounded uppercase tracking-wider;
+  }
+
+  .category-content {
+    background-color: hsl(var(--category-content) / 0.15);
+    color: hsl(var(--category-content));
+  }
+
+  .category-vanilla {
+    background-color: hsl(var(--category-vanilla) / 0.15);
+    color: hsl(var(--category-vanilla));
+  }
+
+  .category-enhancement {
+    background-color: hsl(var(--category-enhancement) / 0.15);
+    color: hsl(var(--category-enhancement));
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 3px;
+  }
+}
