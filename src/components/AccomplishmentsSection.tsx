@@ -1,8 +1,8 @@
 import { Accomplishment, Project } from '@/types/project';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trophy, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
-import { useDateFormat } from '@/contexts/DateFormatContext';
+import { Trophy } from 'lucide-react'; // Removed Calendar import
+// import { format } from 'date-fns'; // Removed date-fns import
+// import { useDateFormat } from '@/contexts/DateFormatContext'; // Removed useDateFormat import
 
 interface AccomplishmentsSectionProps {
   accomplishments: Accomplishment[];
@@ -10,7 +10,7 @@ interface AccomplishmentsSectionProps {
 }
 
 export const AccomplishmentsSection = ({ accomplishments, projects }: AccomplishmentsSectionProps) => {
-  const { formatDate } = useDateFormat();
+  // const { formatDate } = useDateFormat(); // Removed useDateFormat hook
 
   if (accomplishments.length === 0) return null;
 
@@ -46,11 +46,10 @@ export const AccomplishmentsSection = ({ accomplishments, projects }: Accomplish
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                    <Calendar className="w-3 h-3" />
-                    <span>{formatDate(item.completedAt)}</span>
+                    {/* Removed Calendar icon and date display */}
                     {projectName && (
                       <>
-                        <span>•</span>
+                        {/* Removed separator if date is not present */}
                         <span className="truncate">{projectName}</span>
                       </>
                     )}
