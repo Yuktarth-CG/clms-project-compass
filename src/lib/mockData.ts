@@ -99,6 +99,7 @@ export const generateMockProjects = (): Project[] => {
         stages: generateProjectDates(baseDate, offsetDays, 15),
         discarded: false,
         jiraLink: null,
+        reason: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });

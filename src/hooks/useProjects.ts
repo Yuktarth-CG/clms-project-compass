@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Project, LifecycleStage, STAGE_ORDER } from '@/types/project';
+import { Project } from '@/types/project';
 import { toast } from 'sonner';
 
 interface DbProject {
@@ -19,6 +19,7 @@ interface DbProject {
   release_end_date: string | null;
   discarded: boolean;
   jira_link: string | null;
+  reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,6 +37,7 @@ const dbToProject = (db: DbProject): Project => ({
   },
   discarded: db.discarded,
   jiraLink: db.jira_link,
+  reason: db.reason,
   createdAt: db.created_at,
   updatedAt: db.updated_at,
 });
@@ -55,6 +57,7 @@ const projectToDb = (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & 
   release_end_date: project.stages.release.endDate,
   discarded: project.discarded,
   jira_link: project.jiraLink,
+  reason: project.reason,
 });
 
 export const useProjects = () => {

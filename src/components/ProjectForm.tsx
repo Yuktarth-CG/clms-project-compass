@@ -30,6 +30,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
   const [stages, setStages] = useState<Record<LifecycleStage, StageDate>>({ ...emptyStages });
   const [discarded, setDiscarded] = useState(false);
   const [jiraLink, setJiraLink] = useState('');
+  const [reason, setReason] = useState('');
 
   // Reset form when project changes or dialog opens
   useEffect(() => {
@@ -39,6 +40,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
       setStages(project?.stages || { ...emptyStages });
       setDiscarded(project?.discarded || false);
       setJiraLink(project?.jiraLink || '');
+      setReason(project?.reason || '');
     }
   }, [project, open]);
 
@@ -61,6 +63,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
       stages,
       discarded,
       jiraLink: jiraLink || null,
+      reason: reason || null,
     });
     onClose();
   };
@@ -116,6 +119,16 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
               value={jiraLink}
               onChange={(e) => setJiraLink(e.target.value)}
               placeholder="https://jira.example.com/browse/PROJECT-123"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="reason">Reason / Notes (optional)</Label>
+            <Input
+              id="reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Enter reason or notes for this project"
             />
           </div>
 
