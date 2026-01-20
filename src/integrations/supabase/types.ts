@@ -84,6 +84,7 @@ export type Database = {
           name: string
           qa_end_date: string | null
           qa_start_date: string | null
+          reason: string | null
           release_end_date: string | null
           release_start_date: string | null
           requirement_end_date: string | null
@@ -103,6 +104,7 @@ export type Database = {
           name: string
           qa_end_date?: string | null
           qa_start_date?: string | null
+          reason?: string | null
           release_end_date?: string | null
           release_start_date?: string | null
           requirement_end_date?: string | null
@@ -122,6 +124,7 @@ export type Database = {
           name?: string
           qa_end_date?: string | null
           qa_start_date?: string | null
+          reason?: string | null
           release_end_date?: string | null
           release_start_date?: string | null
           requirement_end_date?: string | null

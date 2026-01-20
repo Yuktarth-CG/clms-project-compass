@@ -14,6 +14,7 @@ export interface Project {
   stages: Record<LifecycleStage, StageDate>;
   discarded: boolean;
   jiraLink: string | null;
+  reason: string | null;
   createdAt: string;
   updatedAt: string;
 }
