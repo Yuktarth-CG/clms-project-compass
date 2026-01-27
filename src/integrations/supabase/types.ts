@@ -49,6 +49,30 @@ export type Database = {
           },
         ]
       }
+      custom_stage_labels: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          stage_key: Database["public"]["Enums"]["lifecycle_stage"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          stage_key: Database["public"]["Enums"]["lifecycle_stage"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          stage_key?: Database["public"]["Enums"]["lifecycle_stage"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dashboard_settings: {
         Row: {
           id: string
@@ -129,6 +153,51 @@ export type Database = {
           release_start_date?: string | null
           requirement_end_date?: string | null
           requirement_start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      published_reports: {
+        Row: {
+          id: string
+          is_public: boolean
+          published_at: string
+          report_data: Json
+        }
+        Insert: {
+          id?: string
+          is_public?: boolean
+          published_at?: string
+          report_data: Json
+        }
+        Update: {
+          id?: string
+          is_public?: boolean
+          published_at?: string
+          report_data?: Json
+        }
+        Relationships: []
+      }
+      report_drafts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          report_data: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          report_data: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          report_data?: Json
           updated_at?: string
         }
         Relationships: []
