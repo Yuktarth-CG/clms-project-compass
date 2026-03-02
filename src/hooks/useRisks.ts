@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RiskItem } from '@/types/project';
+import { withRetry } from '@/lib/retry';
 import { toast } from 'sonner';
 
 interface DbRisk {
@@ -23,10 +24,12 @@ export const useRisks = () => {
 
   const fetchRisks = async () => {
     try {
-      const { data, error } = await supabase
-        .from('risks')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await withRetry(async () => {
+        return await supabase
+          .from('risks')
+          .select('*')
+          .order('created_at', { ascending: false });
+      });
 
       if (error) throw error;
       setRisks((data as DbRisk[]).map(dbToRisk));

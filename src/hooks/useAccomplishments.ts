@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Accomplishment } from '@/types/project';
+import { withRetry } from '@/lib/retry';
 import { toast } from 'sonner';
 
 interface DbAccomplishment {
@@ -27,10 +28,12 @@ export const useAccomplishments = () => {
 
   const fetchAccomplishments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('accomplishments')
-        .select('*')
-        .order('completed_at', { ascending: false });
+      const { data, error } = await withRetry(async () => {
+        return await supabase
+          .from('accomplishments')
+          .select('*')
+          .order('completed_at', { ascending: false });
+      });
 
       if (error) throw error;
       setAccomplishments((data as DbAccomplishment[]).map(dbToAccomplishment));

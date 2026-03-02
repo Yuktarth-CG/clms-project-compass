@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardSetting } from '@/types/project';
+import { withRetry } from '@/lib/retry';
 import { toast } from 'sonner';
 
 interface DbDashboardSetting {
@@ -28,9 +29,11 @@ export const useDashboardSettings = () => {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('dashboard_settings')
-        .select('*');
+      const { data, error } = await withRetry(async () => {
+        return await supabase
+          .from('dashboard_settings')
+          .select('*');
+      });
 
       if (error) throw error;
       

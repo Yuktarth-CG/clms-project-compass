@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TeamMember } from '@/types/project';
+import { withRetry } from '@/lib/retry';
 import { toast } from 'sonner';
 
 interface DbTeamMember {
@@ -27,10 +28,12 @@ export const useTeamMembers = () => {
 
   const fetchTeamMembers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('team_members')
-        .select('*')
-        .order('display_order');
+      const { data, error } = await withRetry(async () => {
+        return await supabase
+          .from('team_members')
+          .select('*')
+          .order('display_order');
+      });
 
       if (error) throw error;
       setTeamMembers((data as DbTeamMember[]).map(dbToTeamMember));
