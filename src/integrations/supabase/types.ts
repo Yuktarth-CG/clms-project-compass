@@ -73,6 +73,30 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_status_labels: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          status_key: Database["public"]["Enums"]["derived_status_key"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          status_key: Database["public"]["Enums"]["derived_status_key"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          status_key?: Database["public"]["Enums"]["derived_status_key"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dashboard_settings: {
         Row: {
           id: string
@@ -258,6 +282,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      derived_status_key:
+        | "pipeline"
+        | "ready_for_dev"
+        | "ready_for_qa"
+        | "completed"
       lifecycle_stage:
         | "requirement"
         | "design"
@@ -393,6 +422,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      derived_status_key: [
+        "pipeline",
+        "ready_for_dev",
+        "ready_for_qa",
+        "completed",
+      ],
       lifecycle_stage: [
         "requirement",
         "design",
