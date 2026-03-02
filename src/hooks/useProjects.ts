@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Project } from '@/types/project';
+import { withRetry } from '@/lib/retry';
 import { toast } from 'sonner';
 
 interface DbProject {
@@ -66,10 +67,12 @@ export const useProjects = () => {
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('name');
+      const { data, error } = await withRetry(async () => {
+        return await supabase
+          .from('projects')
+          .select('*')
+          .order('name');
+      });
 
       if (error) throw error;
       setProjects((data as DbProject[]).map(dbToProject));
