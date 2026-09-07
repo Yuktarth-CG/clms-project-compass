@@ -1,4 +1,4 @@
-import { ProjectCategory, CATEGORY_LABELS } from '@/types/project';
+import { ProjectCategory, CATEGORY_LABELS, ProjectPriority, PRIORITY_LABELS, PRIORITY_ORDER } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,9 @@ interface CategoryFilterProps {
   counts: Record<ProjectCategory | 'all', number>;
   statusFilter?: ProjectStatus | 'all';
   onStatusChange?: (status: ProjectStatus | 'all') => void;
+  priorityFilter?: ProjectPriority | 'all';
+  onPriorityChange?: (priority: ProjectPriority | 'all') => void;
+  priorityCounts?: Record<ProjectPriority | 'all', number>;
   searchTerm?: string;
   onSearchChange?: (term: string) => void;
 }
@@ -28,17 +31,21 @@ const statusLabels: Record<ProjectStatus | 'all', string> = {
   completed: 'Completed',
 };
 
-export const CategoryFilter = ({ 
-  selected, 
-  onChange, 
-  counts, 
-  statusFilter = 'all', 
+export const CategoryFilter = ({
+  selected,
+  onChange,
+  counts,
+  statusFilter = 'all',
   onStatusChange,
+  priorityFilter = 'all',
+  onPriorityChange,
+  priorityCounts,
   searchTerm = '',
-  onSearchChange 
+  onSearchChange
 }: CategoryFilterProps) => {
   const categories: (ProjectCategory | 'all')[] = ['all', 'content', 'vanilla', 'enhancement'];
   const statuses: (ProjectStatus | 'all')[] = ['all', 'pipeline', 'requirement', 'design', 'ready_for_dev', 'development', 'ready_for_qa', 'qa', 'release', 'completed'];
+  const priorities: (ProjectPriority | 'all')[] = ['all', ...PRIORITY_ORDER];
 
   return (
     <div className="flex flex-col gap-3">
@@ -101,6 +108,28 @@ export const CategoryFilter = ({
               )}
             >
               {statusLabels[status]}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {/* Priority Filter */}
+      {onPriorityChange && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mr-2">Priority:</span>
+          {priorities.map((priority) => (
+            <Button
+              key={priority}
+              variant={priorityFilter === priority ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onPriorityChange(priority)}
+              className={cn(
+                'text-xs',
+                priorityFilter === priority && 'shadow-sm'
+              )}
+            >
+              {priority === 'all' ? 'All' : PRIORITY_LABELS[priority]}
+              {priorityCounts && <span className="ml-1.5 text-xs opacity-70">({priorityCounts[priority]})</span>}
             </Button>
           ))}
         </div>

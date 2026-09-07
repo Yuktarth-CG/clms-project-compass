@@ -130,6 +130,7 @@ export type Database = {
           id: string
           jira_link: string | null
           name: string
+          priority: number | null
           qa_end_date: string | null
           qa_start_date: string | null
           reason: string | null
@@ -150,6 +151,7 @@ export type Database = {
           id?: string
           jira_link?: string | null
           name: string
+          priority?: number | null
           qa_end_date?: string | null
           qa_start_date?: string | null
           reason?: string | null
@@ -170,6 +172,7 @@ export type Database = {
           id?: string
           jira_link?: string | null
           name?: string
+          priority?: number | null
           qa_end_date?: string | null
           qa_start_date?: string | null
           reason?: string | null

@@ -8,6 +8,7 @@ interface DbProject {
   id: string;
   name: string;
   category: 'content' | 'vanilla' | 'enhancement';
+  priority: number | null;
   requirement_start_date: string | null;
   requirement_end_date: string | null;
   design_start_date: string | null;
@@ -29,6 +30,7 @@ const dbToProject = (db: DbProject): Project => ({
   id: db.id,
   name: db.name,
   category: db.category,
+  priority: (db.priority as Project['priority']) ?? null,
   stages: {
     requirement: { startDate: db.requirement_start_date, endDate: db.requirement_end_date },
     design: { startDate: db.design_start_date, endDate: db.design_end_date },
@@ -46,6 +48,7 @@ const dbToProject = (db: DbProject): Project => ({
 const projectToDb = (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => ({
   name: project.name,
   category: project.category,
+  priority: project.priority,
   requirement_start_date: project.stages.requirement.startDate,
   requirement_end_date: project.stages.requirement.endDate,
   design_start_date: project.stages.design.startDate,

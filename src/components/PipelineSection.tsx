@@ -3,6 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Inbox, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isAuthenticated } from '@/lib/auth';
+import { cn } from '@/lib/utils';
+
+const priorityColors: Record<1 | 2 | 3 | 4, string> = {
+  1: 'bg-[hsl(0,72%,51%)]/15 text-[hsl(0,72%,45%)]',
+  2: 'bg-[hsl(25,95%,53%)]/15 text-[hsl(25,90%,42%)]',
+  3: 'bg-[hsl(48,96%,53%)]/15 text-[hsl(38,80%,35%)]',
+  4: 'bg-muted text-muted-foreground',
+};
 
 interface PipelineSectionProps {
   projects: Project[];
@@ -35,6 +43,11 @@ export const PipelineSection = ({ projects, onEditProject }: PipelineSectionProp
               <span className={`category-badge category-${project.category}`}>
                 {project.category.slice(0, 3).toUpperCase()}
               </span>
+              {project.priority && (
+                <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-sm flex-shrink-0', priorityColors[project.priority])}>
+                  P{project.priority}
+                </span>
+              )}
               <span className="text-sm font-medium text-foreground">{project.name}</span>
               {isAdmin && onEditProject && (
                 <Button

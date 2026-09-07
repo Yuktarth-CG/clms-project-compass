@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Project, ProjectCategory, CATEGORY_LABELS, STAGE_LABELS, STAGE_ORDER, LifecycleStage, StageDate } from '@/types/project';
+import { Project, ProjectCategory, ProjectPriority, CATEGORY_LABELS, PRIORITY_LABELS, PRIORITY_ORDER, STAGE_LABELS, STAGE_ORDER, LifecycleStage, StageDate } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,7 @@ const emptyStages: Record<LifecycleStage, StageDate> = {
 export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps) => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ProjectCategory>('content');
+  const [priority, setPriority] = useState<ProjectPriority | null>(null);
   const [stages, setStages] = useState<Record<LifecycleStage, StageDate>>({ ...emptyStages });
   const [discarded, setDiscarded] = useState(false);
   const [jiraLink, setJiraLink] = useState('');
@@ -37,6 +38,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
     if (open) {
       setName(project?.name || '');
       setCategory(project?.category || 'content');
+      setPriority(project?.priority ?? null);
       setStages(project?.stages || { ...emptyStages });
       setDiscarded(project?.discarded || false);
       setJiraLink(project?.jiraLink || '');
@@ -60,6 +62,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
       id: project?.id,
       name,
       category,
+      priority,
       stages,
       discarded,
       jiraLink: jiraLink || null,
@@ -79,18 +82,18 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Project Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter project name"
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Project Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter project name"
+              required
+            />
+          </div>
 
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as ProjectCategory)}>
@@ -101,6 +104,26 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
                   {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
                     <SelectItem key={key} value={key}>
                       {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select
+                value={priority === null ? 'none' : String(priority)}
+                onValueChange={(v) => setPriority(v === 'none' ? null : (Number(v) as ProjectPriority))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unset</SelectItem>
+                  {PRIORITY_ORDER.map((p) => (
+                    <SelectItem key={p} value={String(p)}>
+                      {PRIORITY_LABELS[p]}
                     </SelectItem>
                   ))}
                 </SelectContent>

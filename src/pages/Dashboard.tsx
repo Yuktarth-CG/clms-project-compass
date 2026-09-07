@@ -9,7 +9,7 @@ import { StatusSummary, getProjectStatus, ProjectStatus } from '@/components/Sta
 import { TeamSection } from '@/components/TeamSection';
 import { AccomplishmentsSection } from '@/components/AccomplishmentsSection';
 import { ProjectForm } from '@/components/ProjectForm';
-import { Project, ProjectCategory, STAGE_ORDER } from '@/types/project';
+import { Project, ProjectCategory, ProjectPriority, STAGE_ORDER } from '@/types/project';
 import { useProjects } from '@/hooks/useProjects';
 import { useRisks } from '@/hooks/useRisks';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -27,6 +27,7 @@ const Dashboard = () => {
   const { settings, updateSetting } = useDashboardSettings(); // Get updateSetting
   const [categoryFilter, setCategoryFilter] = useState<ProjectCategory | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<ProjectPriority | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -54,21 +55,34 @@ const Dashboard = () => {
     if (statusFilter !== 'all') {
       filtered = filtered.filter((p) => getProjectStatus(p) === statusFilter);
     }
-    
+
+    // Priority filter
+    if (priorityFilter !== 'all') {
+      filtered = filtered.filter((p) => p.priority === priorityFilter);
+    }
+
     // Search filter
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
       filtered = filtered.filter((p) => p.name.toLowerCase().includes(lowerSearch));
     }
-    
+
     return filtered;
-  }, [timelineProjects, categoryFilter, statusFilter, searchTerm]);
+  }, [timelineProjects, categoryFilter, statusFilter, priorityFilter, searchTerm]);
 
   const categoryCounts = useMemo(() => ({
     all: projects.length,
     content: projects.filter((p) => p.category === 'content').length,
     vanilla: projects.filter((p) => p.category === 'vanilla').length,
     enhancement: projects.filter((p) => p.category === 'enhancement').length,
+  }), [projects]);
+
+  const priorityCounts = useMemo(() => ({
+    all: projects.length,
+    1: projects.filter((p) => p.priority === 1).length,
+    2: projects.filter((p) => p.priority === 2).length,
+    3: projects.filter((p) => p.priority === 3).length,
+    4: projects.filter((p) => p.priority === 4).length,
   }), [projects]);
 
   const handleEditProject = (project: Project) => {
@@ -135,12 +149,15 @@ const Dashboard = () => {
         
         <div className="flex flex-col gap-4 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            <CategoryFilter 
-              selected={categoryFilter} 
-              onChange={setCategoryFilter} 
+            <CategoryFilter
+              selected={categoryFilter}
+              onChange={setCategoryFilter}
               counts={categoryCounts}
               statusFilter={statusFilter}
               onStatusChange={setStatusFilter}
+              priorityFilter={priorityFilter}
+              onPriorityChange={setPriorityFilter}
+              priorityCounts={priorityCounts}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
             />

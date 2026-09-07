@@ -56,6 +56,13 @@ const stageColors: Record<LifecycleStage, string> = {
   release: 'bg-[hsl(152,69%,41%)]',
 };
 
+const priorityColors: Record<1 | 2 | 3 | 4, string> = {
+  1: 'bg-[hsl(0,72%,51%)]/15 text-[hsl(0,72%,45%)]',
+  2: 'bg-[hsl(25,95%,53%)]/15 text-[hsl(25,90%,42%)]',
+  3: 'bg-[hsl(48,96%,53%)]/15 text-[hsl(38,80%,35%)]',
+  4: 'bg-muted text-muted-foreground',
+};
+
 interface TimeColumn {
   date: Date;
   label: string;
@@ -370,6 +377,11 @@ export const Timeline = ({ projects, view, onEditProject }: TimelineProps) => {
                         <span className={`category-badge category-${project.category}`}>
                           {project.category.slice(0, 3).toUpperCase()}
                         </span>
+                        {project.priority && (
+                          <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded-sm flex-shrink-0', priorityColors[project.priority])}>
+                            P{project.priority}
+                          </span>
+                        )}
                         {project.jiraLink ? (
                           <a
                             href={project.jiraLink}

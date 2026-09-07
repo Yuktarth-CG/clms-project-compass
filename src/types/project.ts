@@ -1,5 +1,7 @@
 export type ProjectCategory = 'content' | 'vanilla' | 'enhancement';
 
+export type ProjectPriority = 1 | 2 | 3 | 4;
+
 export type LifecycleStage = 'requirement' | 'design' | 'development' | 'qa' | 'release';
 
 export interface StageDate {
@@ -11,6 +13,7 @@ export interface Project {
   id: string;
   name: string;
   category: ProjectCategory;
+  priority: ProjectPriority | null;
   stages: Record<LifecycleStage, StageDate>;
   discarded: boolean;
   jiraLink: string | null;
@@ -66,3 +69,12 @@ export const CATEGORY_LABELS: Record<ProjectCategory, string> = {
 };
 
 export const STAGE_ORDER: LifecycleStage[] = ['requirement', 'design', 'development', 'qa', 'release'];
+
+export const PRIORITY_LABELS: Record<ProjectPriority, string> = {
+  1: 'Priority 1',
+  2: 'Priority 2',
+  3: 'Priority 3',
+  4: 'Priority 4',
+};
+
+export const PRIORITY_ORDER: ProjectPriority[] = [1, 2, 3, 4];
