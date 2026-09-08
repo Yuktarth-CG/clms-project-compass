@@ -8,6 +8,7 @@ import {
   eachDayOfInterval,
   startOfMonth,
   endOfMonth,
+  getDay,
   max as maxDate,
   min as minDate,
   parseISO,
@@ -25,8 +26,16 @@ interface PublisherGanttChartProps {
 }
 
 const NAME_COL_WIDTH = 340;
-const CHART_WIDTH = 760;
 const MIN_ROW_HEIGHT = 40;
+
+// Each view mode is both a zoom level (pixels per day) and a grid granularity —
+// like switching a calendar between Month/Week/Day view.
+const PX_PER_DAY: Record<GanttGridMode, number> = {
+  none: 9,
+  month: 9,
+  week: 24,
+  day: 48,
+};
 
 const stageColors: Record<LifecycleStage, string> = {
   requirement: '#4f6bed',
@@ -45,7 +54,9 @@ const categoryColors: Record<Project['category'], string> = {
 export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChartProps>(
   ({ title, subtitle, projects, rangeStart, rangeEnd, gridMode, showCategory }, ref) => {
     const totalDays = Math.max(differenceInDays(rangeEnd, rangeStart) + 1, 1);
-    const pxPerDay = CHART_WIDTH / totalDays;
+    const pxPerDay = PX_PER_DAY[gridMode];
+    const chartWidth = totalDays * pxPerDay;
+    const showDayHeader = gridMode === 'day' || gridMode === 'week';
 
     const months = useMemo(() => {
       const list = eachMonthOfInterval({ start: rangeStart, end: rangeEnd });
@@ -58,7 +69,16 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
       });
     }, [rangeStart, rangeEnd, pxPerDay]);
 
-    // Vertical reference lines behind the bars, granularity controlled by gridMode.
+    const days = useMemo(() => {
+      if (!showDayHeader) return [];
+      return eachDayOfInterval({ start: rangeStart, end: rangeEnd }).map((d, i) => ({
+        date: d,
+        left: i * pxPerDay,
+        isWeekend: getDay(d) === 0 || getDay(d) === 6,
+      }));
+    }, [showDayHeader, rangeStart, rangeEnd, pxPerDay]);
+
+    // Vertical reference lines behind the bars, granularity matches the view mode.
     const gridLines = useMemo(() => {
       if (gridMode === 'none') return [];
       if (gridMode === 'month') {
@@ -88,7 +108,7 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
     return (
       <div
         ref={ref}
-        style={{ width: NAME_COL_WIDTH + CHART_WIDTH + 32, fontFamily: 'system-ui, -apple-system, sans-serif' }}
+        style={{ width: NAME_COL_WIDTH + chartWidth + 32, fontFamily: 'system-ui, -apple-system, sans-serif' }}
         className="bg-white text-slate-900 p-4"
       >
         <div className="mb-3">
@@ -112,7 +132,7 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
             <div style={{ width: NAME_COL_WIDTH }} className="flex-shrink-0 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 border-r border-slate-200">
               Project
             </div>
-            <div className="relative" style={{ width: CHART_WIDTH, height: 28 }}>
+            <div className="relative" style={{ width: chartWidth, height: 28 }}>
               {months.map((m, i) => (
                 <div
                   key={i}
@@ -124,6 +144,30 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
               ))}
             </div>
           </div>
+
+          {/* Day/week sub-header — only for the more zoomed-in views */}
+          {showDayHeader && (
+            <div className="flex border-b border-slate-200">
+              <div style={{ width: NAME_COL_WIDTH }} className="flex-shrink-0 border-r border-slate-200 bg-slate-50/60" />
+              <div className="relative" style={{ width: chartWidth, height: gridMode === 'day' ? 30 : 20 }}>
+                {days.map((d, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'absolute top-0 bottom-0 flex flex-col items-center justify-center border-r border-slate-100',
+                      d.isWeekend && 'bg-slate-50'
+                    )}
+                    style={{ left: d.left, width: pxPerDay }}
+                  >
+                    {gridMode === 'day' && (
+                      <span className="text-[8px] text-slate-400 leading-none">{format(d.date, 'EEE')}</span>
+                    )}
+                    <span className="text-[10px] text-slate-600 font-medium leading-none mt-0.5">{format(d.date, 'd')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Rows */}
           {projects.length === 0 ? (
@@ -156,7 +200,11 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                     {project.name}
                   </span>
                 </div>
-                <div style={{ width: CHART_WIDTH, minHeight: MIN_ROW_HEIGHT }} className="relative flex-shrink-0">
+                <div style={{ width: chartWidth, minHeight: MIN_ROW_HEIGHT }} className="relative flex-shrink-0">
+                  {showDayHeader &&
+                    days.filter((d) => d.isWeekend).map((d, i) => (
+                      <div key={i} className="absolute top-0 bottom-0 bg-slate-50/60" style={{ left: d.left, width: pxPerDay }} />
+                    ))}
                   {gridLines.map((left, i) => (
                     <div key={i} className={cn('absolute top-0 bottom-0 border-r', gridLineClass)} style={{ left }} />
                   ))}

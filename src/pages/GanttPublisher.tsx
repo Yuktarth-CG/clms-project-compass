@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
   Search, X, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange,
-  Save, Copy, FolderOpen, Trash2, PlusCircle, Grid3x3,
+  Save, Copy, FolderOpen, Trash2, PlusCircle, CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -469,14 +469,14 @@ const GanttPublisher = () => {
                   </Button>
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                      <Grid3x3 className="w-3.5 h-3.5" /> Grid
+                      <CalendarDays className="w-3.5 h-3.5" /> View
                     </label>
                     <Select value={gridMode} onValueChange={(v) => setGridMode(v as GanttGridMode)}>
                       <SelectTrigger className="h-10 w-[120px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="none">Overview</SelectItem>
                         <SelectItem value="day">Day</SelectItem>
                         <SelectItem value="week">Week</SelectItem>
                         <SelectItem value="month">Month</SelectItem>
