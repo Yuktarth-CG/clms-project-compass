@@ -121,36 +121,42 @@ export type Database = {
       gantt_charts: {
         Row: {
           created_at: string
+          grid_mode: string
           id: string
           name: string
           overrides: Json
           project_ids: string[]
           range_end: string | null
           range_start: string | null
+          show_category: boolean
           subtitle: string | null
           title: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          grid_mode?: string
           id?: string
           name: string
           overrides?: Json
           project_ids?: string[]
           range_end?: string | null
           range_start?: string | null
+          show_category?: boolean
           subtitle?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          grid_mode?: string
           id?: string
           name?: string
           overrides?: Json
           project_ids?: string[]
           range_end?: string | null
           range_start?: string | null
+          show_category?: boolean
           subtitle?: string | null
           title?: string
           updated_at?: string

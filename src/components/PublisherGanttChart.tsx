@@ -1,9 +1,11 @@
 import { forwardRef, useMemo } from 'react';
-import { Project, STAGE_ORDER, STAGE_LABELS, LifecycleStage } from '@/types/project';
+import { Project, STAGE_ORDER, STAGE_LABELS, LifecycleStage, GanttGridMode } from '@/types/project';
 import {
   format,
   differenceInDays,
   eachMonthOfInterval,
+  eachWeekOfInterval,
+  eachDayOfInterval,
   startOfMonth,
   endOfMonth,
   max as maxDate,
@@ -18,6 +20,8 @@ interface PublisherGanttChartProps {
   projects: Project[];
   rangeStart: Date;
   rangeEnd: Date;
+  gridMode: GanttGridMode;
+  showCategory: boolean;
 }
 
 const NAME_COL_WIDTH = 340;
@@ -39,7 +43,7 @@ const categoryColors: Record<Project['category'], string> = {
 };
 
 export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChartProps>(
-  ({ title, subtitle, projects, rangeStart, rangeEnd }, ref) => {
+  ({ title, subtitle, projects, rangeStart, rangeEnd, gridMode, showCategory }, ref) => {
     const totalDays = Math.max(differenceInDays(rangeEnd, rangeStart) + 1, 1);
     const pxPerDay = CHART_WIDTH / totalDays;
 
@@ -53,6 +57,23 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
         return { label: format(m, 'MMMM yyyy'), left, width };
       });
     }, [rangeStart, rangeEnd, pxPerDay]);
+
+    // Vertical reference lines behind the bars, granularity controlled by gridMode.
+    const gridLines = useMemo(() => {
+      if (gridMode === 'none') return [];
+      if (gridMode === 'month') {
+        return months.map((m) => m.left).filter((left) => left > 0.5);
+      }
+      const dates =
+        gridMode === 'day'
+          ? eachDayOfInterval({ start: rangeStart, end: rangeEnd })
+          : eachWeekOfInterval({ start: rangeStart, end: rangeEnd }, { weekStartsOn: 1 });
+      return dates
+        .map((d) => differenceInDays(d, rangeStart) * pxPerDay)
+        .filter((left) => left > 0.5);
+    }, [gridMode, rangeStart, rangeEnd, months, pxPerDay]);
+
+    const gridLineClass = gridMode === 'day' ? 'border-slate-100/70' : gridMode === 'week' ? 'border-slate-200/80' : 'border-slate-200';
 
     const getBarStyle = (startStr: string | null, endStr: string | null) => {
       if (!startStr || !endStr) return null;
@@ -73,6 +94,16 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
         <div className="mb-3">
           <h2 className="text-lg font-bold">{title}</h2>
           {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-4 mb-3">
+          {STAGE_ORDER.map((stage) => (
+            <div key={stage} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: stageColors[stage] }} />
+              <span className="text-[11px] text-slate-600">{STAGE_LABELS[stage]}</span>
+            </div>
+          ))}
         </div>
 
         <div className="border border-slate-200 rounded-md overflow-hidden">
@@ -108,12 +139,14 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                   style={{ width: NAME_COL_WIDTH }}
                   className="flex-shrink-0 px-3 py-2 flex items-center gap-2 border-r border-slate-200 min-w-0"
                 >
-                  <span
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white flex-shrink-0 self-start mt-0.5"
-                    style={{ backgroundColor: categoryColors[project.category] }}
-                  >
-                    {project.category.slice(0, 3).toUpperCase()}
-                  </span>
+                  {showCategory && (
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white flex-shrink-0 self-start mt-0.5"
+                      style={{ backgroundColor: categoryColors[project.category] }}
+                    >
+                      {project.category.slice(0, 3).toUpperCase()}
+                    </span>
+                  )}
                   {project.priority && (
                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-slate-200 text-slate-700 flex-shrink-0 self-start mt-0.5">
                       P{project.priority}
@@ -124,8 +157,8 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                   </span>
                 </div>
                 <div style={{ width: CHART_WIDTH, minHeight: MIN_ROW_HEIGHT }} className="relative flex-shrink-0">
-                  {months.map((m, i) => (
-                    <div key={i} className="absolute top-0 bottom-0 border-r border-slate-100" style={{ left: m.left, width: m.width }} />
+                  {gridLines.map((left, i) => (
+                    <div key={i} className={cn('absolute top-0 bottom-0 border-r', gridLineClass)} style={{ left }} />
                   ))}
                   {STAGE_ORDER.map((stage) => {
                     const bar = getBarStyle(project.stages[stage].startDate, project.stages[stage].endDate);
@@ -151,16 +184,6 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
               </div>
             ))
           )}
-        </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 mt-3">
-          {STAGE_ORDER.map((stage) => (
-            <div key={stage} className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ backgroundColor: stageColors[stage] }} />
-              <span className="text-[11px] text-slate-600">{STAGE_LABELS[stage]}</span>
-            </div>
-          ))}
         </div>
 
         <p className="text-[10px] text-slate-400 mt-3">

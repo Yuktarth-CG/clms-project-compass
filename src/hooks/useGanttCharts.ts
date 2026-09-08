@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { SavedGanttChart, LifecycleStage, StageDate } from '@/types/project';
+import { SavedGanttChart, GanttGridMode, LifecycleStage, StageDate } from '@/types/project';
 import type { Json } from '@/integrations/supabase/types';
 import { withRetry } from '@/lib/retry';
 import { toast } from 'sonner';
@@ -14,6 +14,8 @@ interface DbGanttChart {
   range_end: string | null;
   project_ids: string[];
   overrides: Record<string, Record<LifecycleStage, StageDate>>;
+  grid_mode: GanttGridMode;
+  show_category: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +29,8 @@ const dbToChart = (db: DbGanttChart): SavedGanttChart => ({
   rangeEnd: db.range_end,
   projectIds: db.project_ids,
   overrides: db.overrides,
+  gridMode: db.grid_mode,
+  showCategory: db.show_category,
   createdAt: db.created_at,
   updatedAt: db.updated_at,
 });
@@ -66,6 +70,8 @@ export const useGanttCharts = () => {
           range_end: chart.rangeEnd,
           project_ids: chart.projectIds,
           overrides: chart.overrides as unknown as Json,
+          grid_mode: chart.gridMode,
+          show_category: chart.showCategory,
         })
         .select()
         .single();
@@ -93,6 +99,8 @@ export const useGanttCharts = () => {
           range_end: chart.rangeEnd,
           project_ids: chart.projectIds,
           overrides: chart.overrides as unknown as Json,
+          grid_mode: chart.gridMode,
+          show_category: chart.showCategory,
         })
         .eq('id', id)
         .select()

@@ -8,13 +8,16 @@ import { PublisherGanttChart } from '@/components/PublisherGanttChart';
 import { DatePicker } from '@/components/DatePicker';
 import { useProjects } from '@/hooks/useProjects';
 import { useGanttCharts } from '@/hooks/useGanttCharts';
-import { Project, SavedGanttChart, STAGE_ORDER, STAGE_LABELS, LifecycleStage } from '@/types/project';
+import { Project, SavedGanttChart, GanttGridMode, STAGE_ORDER, STAGE_LABELS, LifecycleStage } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Search, X, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange,
-  Save, Copy, FolderOpen, Trash2, PlusCircle,
+  Save, Copy, FolderOpen, Trash2, PlusCircle, Grid3x3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -39,6 +42,8 @@ const GanttPublisher = () => {
   const [subtitle, setSubtitle] = useState('');
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
+  const [gridMode, setGridMode] = useState<GanttGridMode>('month');
+  const [showCategory, setShowCategory] = useState(false);
   const [exporting, setExporting] = useState<'png' | 'pdf' | null>(null);
   const [loadedChartId, setLoadedChartId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -144,6 +149,8 @@ const GanttPublisher = () => {
     setSubtitle(chart.subtitle || '');
     setRangeStart(chart.rangeStart);
     setRangeEnd(chart.rangeEnd);
+    setGridMode(chart.gridMode);
+    setShowCategory(chart.showCategory);
     setLoadedChartId(chart.id);
     setSearchParams({ chart: chart.id }, { replace: true });
     if (skipped > 0) {
@@ -178,6 +185,8 @@ const GanttPublisher = () => {
       subtitle: subtitle || null,
       rangeStart,
       rangeEnd,
+      gridMode,
+      showCategory,
       projectIds: selectedIds,
       overrides,
     };
@@ -251,6 +260,8 @@ const GanttPublisher = () => {
     setSubtitle('');
     setRangeStart(null);
     setRangeEnd(null);
+    setGridMode('month');
+    setShowCategory(false);
     setLoadedChartId(null);
     searchParams.delete('chart');
     setSearchParams(searchParams, { replace: true });
@@ -456,6 +467,28 @@ const GanttPublisher = () => {
                   <Button variant="outline" size="sm" onClick={fitRangeToSelection}>
                     Fit to selection
                   </Button>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <Grid3x3 className="w-3.5 h-3.5" /> Grid
+                    </label>
+                    <Select value={gridMode} onValueChange={(v) => setGridMode(v as GanttGridMode)}>
+                      <SelectTrigger className="h-10 w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="day">Day</SelectItem>
+                        <SelectItem value="week">Week</SelectItem>
+                        <SelectItem value="month">Month</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2 pb-2">
+                    <Switch id="show-category" checked={showCategory} onCheckedChange={setShowCategory} />
+                    <Label htmlFor="show-category" className="text-xs font-medium text-muted-foreground cursor-pointer">
+                      Show project type
+                    </Label>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
@@ -501,6 +534,8 @@ const GanttPublisher = () => {
                 projects={selectedProjects}
                 rangeStart={effectiveRangeStart}
                 rangeEnd={effectiveRangeEnd}
+                gridMode={gridMode}
+                showCategory={showCategory}
               />
             </div>
 

@@ -63,6 +63,8 @@ export interface Sprint {
   createdAt: string;
 }
 
+export type GanttGridMode = 'none' | 'day' | 'week' | 'month';
+
 export interface SavedGanttChart {
   id: string;
   name: string;
@@ -70,6 +72,8 @@ export interface SavedGanttChart {
   subtitle: string | null;
   rangeStart: string | null;
   rangeEnd: string | null;
+  gridMode: GanttGridMode;
+  showCategory: boolean;
   projectIds: string[];
   overrides: Record<string, Record<LifecycleStage, StageDate>>;
   createdAt: string;
