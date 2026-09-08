@@ -17,8 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
-  Search, X, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange,
-  Save, Copy, FolderOpen, Trash2, PlusCircle, CalendarDays, GripVertical, Pencil,
+  Search, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange,
+  Save, Copy, FolderOpen, Trash2, PlusCircle, CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -564,7 +564,14 @@ const GanttPublisher = () => {
               </CardContent>
             </Card>
 
-            {/* Live preview (this is what gets captured) */}
+            {/* Live preview (this is what gets captured) — rows are draggable to
+                reorder and have inline edit/remove controls; those controls are
+                tagged data-html2canvas-ignore so they never appear in exports. */}
+            {selectedProjects.length > 0 && (
+              <p className="text-xs text-muted-foreground -mb-2">
+                Drag a row's grip handle to reorder it. Use the pencil to edit dates or the label — edits only affect this chart unless you check "Also update the actual project".
+              </p>
+            )}
             <div className="overflow-x-auto border border-border rounded-lg p-4 bg-secondary/10">
               <PublisherGanttChart
                 ref={chartRef}
@@ -575,56 +582,17 @@ const GanttPublisher = () => {
                 rangeEnd={effectiveRangeEnd}
                 gridMode={gridMode}
                 showCategory={showCategory}
+                interactive
+                draggedId={draggedId}
+                dragOverId={dragOverId}
+                onDragStartRow={handleDragStart}
+                onDragOverRow={handleDragOver}
+                onDropRow={handleDrop}
+                onDragEndRow={handleDragEnd}
+                onEditRow={openEditProject}
+                onRemoveRow={removeProject}
               />
             </div>
-
-            {/* Selected projects: drag to reorder, edit via the shared project overlay */}
-            {selectedProjects.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Selected Projects</CardTitle>
-                  <p className="text-xs text-muted-foreground">
-                    Drag <GripVertical className="w-3 h-3 inline -mt-0.5" /> to reorder rows. Edits from the pencil icon only affect this chart unless you check "Also update the actual project".
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-1.5">
-                  {selectedProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      draggable
-                      onDragStart={() => handleDragStart(project.id)}
-                      onDragOver={(e) => handleDragOver(e, project.id)}
-                      onDrop={() => handleDrop(project.id)}
-                      onDragEnd={handleDragEnd}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2.5 rounded-lg border bg-card transition-colors',
-                        draggedId === project.id && 'opacity-40',
-                        dragOverId === project.id && draggedId !== project.id && 'border-primary/60 bg-primary/5'
-                      )}
-                    >
-                      <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 cursor-grab active:cursor-grabbing" />
-                      <span className={`category-badge category-${project.category} flex-shrink-0`}>
-                        {project.category.slice(0, 3).toUpperCase()}
-                      </span>
-                      {project.priority && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground flex-shrink-0">
-                          P{project.priority}
-                        </span>
-                      )}
-                      <span className={cn('text-sm truncate flex-1', project.discarded && 'line-through text-muted-foreground')}>
-                        {project.name}
-                      </span>
-                      <Button variant="ghost" size="icon" onClick={() => openEditProject(project.id)} title="Edit dates or label">
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => removeProject(project.id)} title="Remove from chart">
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </main>

@@ -14,6 +14,7 @@ import {
   parseISO,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { GripVertical, Pencil, X } from 'lucide-react';
 
 interface PublisherGanttChartProps {
   title: string;
@@ -23,6 +24,18 @@ interface PublisherGanttChartProps {
   rangeEnd: Date;
   gridMode: GanttGridMode;
   showCategory: boolean;
+  /** When true, rows become draggable and show edit/remove controls in the
+   * name column. All interactive-only elements are tagged
+   * data-html2canvas-ignore so they're excluded from PNG/PDF export. */
+  interactive?: boolean;
+  draggedId?: string | null;
+  dragOverId?: string | null;
+  onDragStartRow?: (id: string) => void;
+  onDragOverRow?: (e: React.DragEvent, id: string) => void;
+  onDropRow?: (id: string) => void;
+  onDragEndRow?: () => void;
+  onEditRow?: (id: string) => void;
+  onRemoveRow?: (id: string) => void;
 }
 
 const NAME_COL_WIDTH = 340;
@@ -52,7 +65,27 @@ const categoryColors: Record<Project['category'], string> = {
 };
 
 export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChartProps>(
-  ({ title, subtitle, projects, rangeStart, rangeEnd, gridMode, showCategory }, ref) => {
+  (
+    {
+      title,
+      subtitle,
+      projects,
+      rangeStart,
+      rangeEnd,
+      gridMode,
+      showCategory,
+      interactive = false,
+      draggedId = null,
+      dragOverId = null,
+      onDragStartRow,
+      onDragOverRow,
+      onDropRow,
+      onDragEndRow,
+      onEditRow,
+      onRemoveRow,
+    },
+    ref
+  ) => {
     const totalDays = Math.max(differenceInDays(rangeEnd, rangeStart) + 1, 1);
     const pxPerDay = PX_PER_DAY[gridMode];
     const chartWidth = totalDays * pxPerDay;
@@ -176,13 +209,36 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
             projects.map((project, idx) => (
               <div
                 key={project.id}
-                className={cn('flex items-stretch border-b border-slate-100 last:border-b-0', idx % 2 === 1 && 'bg-slate-50/60')}
+                draggable={interactive}
+                onDragStart={interactive ? () => onDragStartRow?.(project.id) : undefined}
+                onDragOver={
+                  interactive
+                    ? (e) => {
+                        e.preventDefault();
+                        onDragOverRow?.(e, project.id);
+                      }
+                    : undefined
+                }
+                onDrop={interactive ? () => onDropRow?.(project.id) : undefined}
+                onDragEnd={interactive ? onDragEndRow : undefined}
+                className={cn(
+                  'flex items-stretch border-b border-slate-100 last:border-b-0',
+                  idx % 2 === 1 && 'bg-slate-50/60',
+                  interactive && draggedId === project.id && 'opacity-40',
+                  interactive && dragOverId === project.id && draggedId !== project.id && 'ring-2 ring-inset ring-blue-400'
+                )}
                 style={{ minHeight: MIN_ROW_HEIGHT }}
               >
                 <div
                   style={{ width: NAME_COL_WIDTH }}
-                  className="flex-shrink-0 px-3 py-2 flex items-center gap-2 border-r border-slate-200 min-w-0"
+                  className="flex-shrink-0 px-3 py-2 flex items-center gap-1.5 border-r border-slate-200 min-w-0"
                 >
+                  {interactive && (
+                    <GripVertical
+                      data-html2canvas-ignore="true"
+                      className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 cursor-grab active:cursor-grabbing"
+                    />
+                  )}
                   {showCategory && (
                     <span
                       className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white flex-shrink-0 self-start mt-0.5"
@@ -196,9 +252,29 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                       P{project.priority}
                     </span>
                   )}
-                  <span className={cn('text-xs font-medium leading-snug whitespace-normal break-words', project.discarded && 'line-through text-slate-400')}>
+                  <span className={cn('text-xs font-medium leading-snug whitespace-normal break-words flex-1 min-w-0', project.discarded && 'line-through text-slate-400')}>
                     {project.name}
                   </span>
+                  {interactive && (
+                    <div data-html2canvas-ignore="true" className="flex items-center gap-0.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => onEditRow?.(project.id)}
+                        className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-700"
+                        title="Edit dates or label"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveRow?.(project.id)}
+                        className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-red-600"
+                        title="Remove from chart"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div style={{ width: chartWidth, minHeight: MIN_ROW_HEIGHT }} className="relative flex-shrink-0">
                   {showDayHeader &&
