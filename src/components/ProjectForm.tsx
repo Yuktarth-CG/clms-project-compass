@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, Link, XCircle } from 'lucide-react';
+import { Calendar, Link, XCircle, Save } from 'lucide-react';
 import { DatePicker } from '@/components/DatePicker';
 import { useSprints } from '@/hooks/useSprints';
 
@@ -14,7 +14,11 @@ interface ProjectFormProps {
   project?: Project | null;
   open: boolean;
   onClose: () => void;
-  onSave: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => void;
+  onSave: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }, persistToLiveProject: boolean) => void;
+  /** When true, shows a checkbox letting the user opt into also writing this
+   * edit back to the real project (used by the Gantt Publisher, where edits
+   * are chart-local by default). Unchecked by default. */
+  showPersistToggle?: boolean;
 }
 
 const emptyStages: Record<LifecycleStage, StageDate> = {
@@ -25,7 +29,7 @@ const emptyStages: Record<LifecycleStage, StageDate> = {
   release: { startDate: null, endDate: null },
 };
 
-export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps) => {
+export const ProjectForm = ({ project, open, onClose, onSave, showPersistToggle = false }: ProjectFormProps) => {
   const { sprints } = useSprints();
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ProjectCategory>('content');
@@ -35,6 +39,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
   const [discarded, setDiscarded] = useState(false);
   const [jiraLink, setJiraLink] = useState('');
   const [reason, setReason] = useState('');
+  const [persistToLive, setPersistToLive] = useState(false);
 
   // Reset form when project changes or dialog opens
   useEffect(() => {
@@ -47,6 +52,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
       setDiscarded(project?.discarded || false);
       setJiraLink(project?.jiraLink || '');
       setReason(project?.reason || '');
+      setPersistToLive(false);
     }
   }, [project, open]);
 
@@ -62,17 +68,20 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      id: project?.id,
-      name,
-      category,
-      priority,
-      sprintId,
-      stages,
-      discarded,
-      jiraLink: jiraLink || null,
-      reason: reason || null,
-    });
+    onSave(
+      {
+        id: project?.id,
+        name,
+        category,
+        priority,
+        sprintId,
+        stages,
+        discarded,
+        jiraLink: jiraLink || null,
+        reason: reason || null,
+      },
+      showPersistToggle ? persistToLive : true
+    );
     onClose();
   };
 
@@ -87,6 +96,22 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {showPersistToggle && (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
+              <div className="flex items-center gap-2">
+                <Save className="w-4 h-4 text-muted-foreground" />
+                <Label htmlFor="persistToLive" className="cursor-pointer">
+                  Also update the actual project (timelines, label, etc.)
+                </Label>
+              </div>
+              <Switch
+                id="persistToLive"
+                checked={persistToLive}
+                onCheckedChange={setPersistToLive}
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="name">Project Name</Label>
             <Input

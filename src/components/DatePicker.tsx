@@ -42,6 +42,7 @@ export const DatePicker = ({ value, onChange, placeholder = 'Pick a date' }: Dat
   };
 
   const handleClear = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     onChange(null);
   };
@@ -50,6 +51,7 @@ export const DatePicker = ({ value, onChange, placeholder = 'Pick a date' }: Dat
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           className={cn(
             'w-full justify-start text-left font-normal h-10',
@@ -61,10 +63,21 @@ export const DatePicker = ({ value, onChange, placeholder = 'Pick a date' }: Dat
             {displayValue || placeholder}
           </span>
           {value && (
-            <X
-              className="h-4 w-4 opacity-50 hover:opacity-100 flex-shrink-0"
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label="Clear date"
+              className="h-4 w-4 flex-shrink-0 inline-flex items-center justify-center"
               onClick={handleClear}
-            />
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClear(e as unknown as React.MouseEvent);
+                }
+              }}
+            >
+              <X className="h-4 w-4 opacity-50 hover:opacity-100" />
+            </span>
           )}
         </Button>
       </PopoverTrigger>

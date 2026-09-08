@@ -6,9 +6,10 @@ import { isAuthenticated } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { PublisherGanttChart } from '@/components/PublisherGanttChart';
 import { DatePicker } from '@/components/DatePicker';
+import { ProjectForm } from '@/components/ProjectForm';
 import { useProjects } from '@/hooks/useProjects';
 import { useGanttCharts } from '@/hooks/useGanttCharts';
-import { Project, SavedGanttChart, GanttGridMode, STAGE_ORDER, STAGE_LABELS, LifecycleStage } from '@/types/project';
+import { Project, SavedGanttChart, GanttGridMode, STAGE_ORDER } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import {
   Search, X, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange,
-  Save, Copy, FolderOpen, Trash2, PlusCircle, CalendarDays,
+  Save, Copy, FolderOpen, Trash2, PlusCircle, CalendarDays, GripVertical, Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -48,6 +49,14 @@ const GanttPublisher = () => {
   const [loadedChartId, setLoadedChartId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [projectFormOpen, setProjectFormOpen] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  // Mirrors draggedId synchronously — the drop handler reads this instead of
+  // state, since state updates from dragstart aren't guaranteed to have
+  // flushed/re-rendered by the time drop fires on a fast drag.
+  const draggedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -81,28 +90,58 @@ const GanttPublisher = () => {
 
   const selectedProjects = selectedIds.map((id) => working[id]).filter(Boolean);
 
-  const handleStageChange = (
-    projectId: string,
-    stage: LifecycleStage,
-    field: 'startDate' | 'endDate',
-    value: string | null
-  ) => {
-    setWorking((prev) => ({
-      ...prev,
-      [projectId]: {
-        ...prev[projectId],
-        stages: {
-          ...prev[projectId].stages,
-          [stage]: { ...prev[projectId].stages[stage], [field]: value },
-        },
-      },
-    }));
+  const openEditProject = (projectId: string) => {
+    setEditingProjectId(projectId);
+    setProjectFormOpen(true);
   };
 
-  const handleSaveToProject = async (projectId: string) => {
-    const p = working[projectId];
-    if (!p) return;
-    await updateProject(projectId, p);
+  const handleProjectFormSave = async (
+    data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+    persistToLiveProject: boolean
+  ) => {
+    const id = data.id;
+    if (!id) return;
+    setWorking((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], ...data, id },
+    }));
+    if (persistToLiveProject) {
+      await updateProject(id, data);
+    }
+  };
+
+  const handleDragStart = (id: string) => {
+    draggedIdRef.current = id;
+    setDraggedId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    if (id !== dragOverId) setDragOverId(id);
+  };
+
+  const handleDragEnd = () => {
+    draggedIdRef.current = null;
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDrop = (targetId: string) => {
+    const sourceId = draggedIdRef.current;
+    if (sourceId && sourceId !== targetId) {
+      setSelectedIds((prev) => {
+        const next = [...prev];
+        const fromIdx = next.indexOf(sourceId);
+        const toIdx = next.indexOf(targetId);
+        if (fromIdx === -1 || toIdx === -1) return prev;
+        next.splice(fromIdx, 1);
+        next.splice(toIdx, 0, sourceId);
+        return next;
+      });
+    }
+    draggedIdRef.current = null;
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   const fitRangeToSelection = () => {
@@ -539,56 +578,48 @@ const GanttPublisher = () => {
               />
             </div>
 
-            {/* Editable dates table */}
+            {/* Selected projects: drag to reorder, edit via the shared project overlay */}
             {selectedProjects.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Adjust Dates</CardTitle>
+                  <CardTitle className="text-base">Selected Projects</CardTitle>
                   <p className="text-xs text-muted-foreground">
-                    Changes here are part of this chart (saved with it) until you click "Save to project" on a specific story.
+                    Drag <GripVertical className="w-3 h-3 inline -mt-0.5" /> to reorder rows. Edits from the pencil icon only affect this chart unless you check "Also update the actual project".
                   </p>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-1.5">
                   {selectedProjects.map((project) => (
-                    <div key={project.id} className="border border-border rounded-lg p-3 space-y-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className={`category-badge category-${project.category} flex-shrink-0`}>
-                            {project.category.slice(0, 3).toUpperCase()}
-                          </span>
-                          <span className="text-sm font-medium truncate">{project.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <Button variant="outline" size="sm" onClick={() => handleSaveToProject(project.id)}>
-                            Save to project
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => removeProject(project.id)} title="Remove from chart">
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {STAGE_ORDER.map((stage) => (
-                          <div key={stage} className="space-y-1">
-                            <label className="text-xs text-muted-foreground flex items-center gap-1.5">
-                              <span className={`w-2 h-2 rounded-sm inline-block stage-${stage}`} />
-                              {STAGE_LABELS[stage]}
-                            </label>
-                            <div className="flex gap-1.5">
-                              <DatePicker
-                                value={project.stages[stage].startDate}
-                                onChange={(v) => handleStageChange(project.id, stage, 'startDate', v)}
-                                placeholder="Start"
-                              />
-                              <DatePicker
-                                value={project.stages[stage].endDate}
-                                onChange={(v) => handleStageChange(project.id, stage, 'endDate', v)}
-                                placeholder="End"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    <div
+                      key={project.id}
+                      draggable
+                      onDragStart={() => handleDragStart(project.id)}
+                      onDragOver={(e) => handleDragOver(e, project.id)}
+                      onDrop={() => handleDrop(project.id)}
+                      onDragEnd={handleDragEnd}
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2.5 rounded-lg border bg-card transition-colors',
+                        draggedId === project.id && 'opacity-40',
+                        dragOverId === project.id && draggedId !== project.id && 'border-primary/60 bg-primary/5'
+                      )}
+                    >
+                      <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 cursor-grab active:cursor-grabbing" />
+                      <span className={`category-badge category-${project.category} flex-shrink-0`}>
+                        {project.category.slice(0, 3).toUpperCase()}
+                      </span>
+                      {project.priority && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-secondary text-muted-foreground flex-shrink-0">
+                          P{project.priority}
+                        </span>
+                      )}
+                      <span className={cn('text-sm truncate flex-1', project.discarded && 'line-through text-muted-foreground')}>
+                        {project.name}
+                      </span>
+                      <Button variant="ghost" size="icon" onClick={() => openEditProject(project.id)} title="Edit dates or label">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => removeProject(project.id)} title="Remove from chart">
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   ))}
                 </CardContent>
@@ -597,6 +628,14 @@ const GanttPublisher = () => {
           </div>
         </div>
       </main>
+
+      <ProjectForm
+        project={editingProjectId ? working[editingProjectId] : null}
+        open={projectFormOpen}
+        onClose={() => { setProjectFormOpen(false); setEditingProjectId(null); }}
+        onSave={handleProjectFormSave}
+        showPersistToggle
+      />
     </div>
   );
 };
