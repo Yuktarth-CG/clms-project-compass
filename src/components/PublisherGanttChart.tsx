@@ -64,6 +64,17 @@ const categoryColors: Record<Project['category'], string> = {
   enhancement: '#4ade80',
 };
 
+// Projects tagged against the original commitment doc carry a "Bet Bx ... Dy"
+// fragment in their reason field (e.g. "Bet B3 (The Content Library) D1 ·
+// Green ..."). Pull just the bet/deliverable numbers out of it for display.
+const BET_TAG_REGEX = /Bet\s+B(\d+)(?:\s*\([^)]*\))?\s*D(\d+)/i;
+
+const getBetTag = (reason: string | null): string | null => {
+  if (!reason) return null;
+  const match = reason.match(BET_TAG_REGEX);
+  return match ? `B${match[1]}:D${match[2]}` : null;
+};
+
 export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChartProps>(
   (
     {
@@ -206,7 +217,9 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
           {projects.length === 0 ? (
             <div className="px-3 py-8 text-center text-sm text-slate-400">No projects selected</div>
           ) : (
-            projects.map((project, idx) => (
+            projects.map((project, idx) => {
+              const betTag = getBetTag(project.reason);
+              return (
               <div
                 key={project.id}
                 draggable={interactive}
@@ -238,6 +251,11 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                       data-html2canvas-ignore="true"
                       className="w-3.5 h-3.5 text-slate-300 flex-shrink-0 cursor-grab active:cursor-grabbing"
                     />
+                  )}
+                  {betTag && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-indigo-50 text-indigo-600 border border-indigo-100 flex-shrink-0 self-start mt-0.5">
+                      {betTag}
+                    </span>
                   )}
                   {showCategory && (
                     <span
@@ -306,7 +324,8 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                   })}
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
