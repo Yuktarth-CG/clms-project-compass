@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { isAuthenticated } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { ProjectForm } from '@/components/ProjectForm';
@@ -13,17 +13,18 @@ import { cn } from '@/lib/utils';
 
 const PipelinePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { projects, loading: projectsLoading, addProject, updateProject } = useProjects();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
     }
-  }, [navigate]);
+  }, [navigate, location]);
 
   const pipelineProjects = useMemo(() => {
     return projects.filter((project) => {

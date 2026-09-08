@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { isAuthenticated } from '@/lib/auth';
@@ -7,11 +7,15 @@ import { Header } from '@/components/Header';
 import { PublisherGanttChart } from '@/components/PublisherGanttChart';
 import { DatePicker } from '@/components/DatePicker';
 import { useProjects } from '@/hooks/useProjects';
-import { Project, STAGE_ORDER, STAGE_LABELS, LifecycleStage } from '@/types/project';
+import { useGanttCharts } from '@/hooks/useGanttCharts';
+import { Project, SavedGanttChart, STAGE_ORDER, STAGE_LABELS, LifecycleStage } from '@/types/project';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, X, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange } from 'lucide-react';
+import {
+  Search, X, FileImage, FileDown, GanttChartSquare, Loader2, CalendarRange,
+  Save, Copy, FolderOpen, Trash2, PlusCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -22,7 +26,10 @@ const slugify = (s: string) =>
 
 const GanttPublisher = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { projects: allProjects, loading, updateProject } = useProjects();
+  const { charts, loading: chartsLoading, saveChart, updateChart, deleteChart } = useGanttCharts();
   const chartRef = useRef<HTMLDivElement>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,12 +40,15 @@ const GanttPublisher = () => {
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [exporting, setExporting] = useState<'png' | 'pdf' | null>(null);
+  const [loadedChartId, setLoadedChartId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
     }
-  }, [navigate]);
+  }, [navigate, location]);
 
   const filteredPickerProjects = useMemo(() => {
     if (!searchTerm.trim()) return allProjects;
@@ -116,6 +126,136 @@ const GanttPublisher = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProjects.length]);
 
+  // Load a saved chart's selection, overrides, title/subtitle/range into working state.
+  const loadChart = (chart: SavedGanttChart) => {
+    const validIds = chart.projectIds.filter((id) => allProjects.some((p) => p.id === id));
+    const skipped = chart.projectIds.length - validIds.length;
+    const nextWorking: Record<string, Project> = {};
+    validIds.forEach((id) => {
+      const live = allProjects.find((p) => p.id === id)!;
+      const clone = cloneProject(live);
+      const override = chart.overrides[id];
+      if (override) clone.stages = override;
+      nextWorking[id] = clone;
+    });
+    setWorking(nextWorking);
+    setSelectedIds(validIds);
+    setTitle(chart.title);
+    setSubtitle(chart.subtitle || '');
+    setRangeStart(chart.rangeStart);
+    setRangeEnd(chart.rangeEnd);
+    setLoadedChartId(chart.id);
+    setSearchParams({ chart: chart.id }, { replace: true });
+    if (skipped > 0) {
+      toast.info(`${skipped} project(s) in this chart no longer exist and were skipped`);
+    }
+  };
+
+  // Auto-load a chart referenced by ?chart=<id> once projects & charts have both loaded.
+  useEffect(() => {
+    if (autoLoadAttempted || loading || chartsLoading) return;
+    const chartId = searchParams.get('chart');
+    if (chartId) {
+      const found = charts.find((c) => c.id === chartId);
+      if (found) {
+        loadChart(found);
+      } else {
+        toast.error('Saved chart not found (it may have been deleted)');
+      }
+    }
+    setAutoLoadAttempted(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, chartsLoading, charts, autoLoadAttempted]);
+
+  const buildChartPayload = (): Omit<SavedGanttChart, 'id' | 'createdAt' | 'updatedAt'> => {
+    const overrides: SavedGanttChart['overrides'] = {};
+    selectedIds.forEach((id) => {
+      if (working[id]) overrides[id] = working[id].stages;
+    });
+    return {
+      name: title,
+      title,
+      subtitle: subtitle || null,
+      rangeStart,
+      rangeEnd,
+      projectIds: selectedIds,
+      overrides,
+    };
+  };
+
+  const handleSave = async () => {
+    if (selectedProjects.length === 0) {
+      toast.error('Pick at least one project before saving');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = buildChartPayload();
+      if (loadedChartId) {
+        const updated = await updateChart(loadedChartId, payload);
+        if (updated) setSearchParams({ chart: updated.id }, { replace: true });
+      } else {
+        const created = await saveChart(payload);
+        if (created) {
+          setLoadedChartId(created.id);
+          setSearchParams({ chart: created.id }, { replace: true });
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAsNew = async () => {
+    if (selectedProjects.length === 0) {
+      toast.error('Pick at least one project before saving');
+      return;
+    }
+    setSaving(true);
+    try {
+      const created = await saveChart(buildChartPayload());
+      if (created) {
+        setLoadedChartId(created.id);
+        setSearchParams({ chart: created.id }, { replace: true });
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteChart = async (id: string) => {
+    if (!confirm('Delete this saved chart? This cannot be undone.')) return;
+    await deleteChart(id);
+    if (loadedChartId === id) {
+      setLoadedChartId(null);
+      searchParams.delete('chart');
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!loadedChartId) return;
+    const url = `${window.location.origin}/gantt-publisher?chart=${loadedChartId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Shareable link copied');
+    } catch {
+      toast.error('Could not copy — copy it from the address bar instead');
+    }
+  };
+
+  const handleNewChart = () => {
+    setSelectedIds([]);
+    setWorking({});
+    setTitle('CLMS Roadmap');
+    setSubtitle('');
+    setRangeStart(null);
+    setRangeEnd(null);
+    setLoadedChartId(null);
+    searchParams.delete('chart');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const effectiveRangeStart = rangeStart ? new Date(rangeStart + 'T00:00:00') : new Date();
   const effectiveRangeEnd = rangeEnd
     ? new Date(rangeEnd + 'T00:00:00')
@@ -165,7 +305,7 @@ const GanttPublisher = () => {
     }
   };
 
-  if (loading) {
+  if (loading || chartsLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -180,62 +320,112 @@ const GanttPublisher = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <GanttChartSquare className="w-6 h-6 text-primary" />
-            Gantt Chart Publisher
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Hand-pick projects, adjust dates for the shared view, and export as an image or PDF.
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+              <GanttChartSquare className="w-6 h-6 text-primary" />
+              Gantt Chart Publisher
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Hand-pick projects, adjust dates for the shared view, and export as an image or PDF.
+            </p>
+          </div>
+          {loadedChartId && (
+            <Button variant="outline" size="sm" onClick={handleNewChart}>
+              <PlusCircle className="w-4 h-4 mr-2" />
+              New Chart
+            </Button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
           {/* Picker panel */}
-          <Card className="h-fit lg:sticky lg:top-20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Pick Projects ({selectedIds.length} selected)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search projects..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="max-h-[480px] overflow-y-auto space-y-1 scrollbar-thin">
-                {filteredPickerProjects.map((project) => {
-                  const isSelected = selectedIds.includes(project.id);
-                  return (
-                    <button
-                      key={project.id}
-                      type="button"
-                      onClick={() => toggleProject(project)}
+          <div className="space-y-4 lg:sticky lg:top-20 h-fit">
+            {charts.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4" />
+                    Saved Charts
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1.5 max-h-[220px] overflow-y-auto scrollbar-thin">
+                  {charts.map((chart) => (
+                    <div
+                      key={chart.id}
                       className={cn(
-                        'w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md border text-sm transition-colors',
-                        isSelected
-                          ? 'bg-primary/10 border-primary/40'
-                          : 'border-transparent hover:bg-secondary/50'
+                        'flex items-center gap-2 px-2.5 py-2 rounded-md border text-sm',
+                        loadedChartId === chart.id ? 'bg-primary/10 border-primary/40' : 'border-transparent hover:bg-secondary/50'
                       )}
                     >
-                      <span className={`category-badge category-${project.category} flex-shrink-0`}>
-                        {project.category.slice(0, 3).toUpperCase()}
-                      </span>
-                      <span className={cn('truncate flex-1', project.discarded && 'line-through text-muted-foreground')}>
-                        {project.name}
-                      </span>
-                    </button>
-                  );
-                })}
-                {filteredPickerProjects.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-6">No projects found</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                      <button
+                        type="button"
+                        onClick={() => loadChart(chart)}
+                        className="flex-1 min-w-0 text-left truncate"
+                        title={chart.name}
+                      >
+                        {chart.name}
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 flex-shrink-0"
+                        onClick={() => handleDeleteChart(chart.id)}
+                        title="Delete saved chart"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Pick Projects ({selectedIds.length} selected)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search projects..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="max-h-[400px] overflow-y-auto space-y-1 scrollbar-thin">
+                  {filteredPickerProjects.map((project) => {
+                    const isSelected = selectedIds.includes(project.id);
+                    return (
+                      <button
+                        key={project.id}
+                        type="button"
+                        onClick={() => toggleProject(project)}
+                        className={cn(
+                          'w-full text-left flex items-center gap-2 px-2.5 py-2 rounded-md border text-sm transition-colors',
+                          isSelected
+                            ? 'bg-primary/10 border-primary/40'
+                            : 'border-transparent hover:bg-secondary/50'
+                        )}
+                      >
+                        <span className={`category-badge category-${project.category} flex-shrink-0`}>
+                          {project.category.slice(0, 3).toUpperCase()}
+                        </span>
+                        <span className={cn('truncate flex-1', project.discarded && 'line-through text-muted-foreground')}>
+                          {project.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {filteredPickerProjects.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-6">No projects found</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Main publisher area */}
           <div className="space-y-4">
@@ -243,7 +433,7 @@ const GanttPublisher = () => {
               <CardContent className="pt-6 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">Chart Title</label>
+                    <label className="text-xs font-medium text-muted-foreground">Chart Title (also used as save name)</label>
                     <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Chart title" />
                   </div>
                   <div className="space-y-1.5">
@@ -266,6 +456,24 @@ const GanttPublisher = () => {
                   <Button variant="outline" size="sm" onClick={fitRangeToSelection}>
                     Fit to selection
                   </Button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border">
+                  <Button size="sm" onClick={handleSave} disabled={saving}>
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    {loadedChartId ? 'Update Saved Chart' : 'Save Chart'}
+                  </Button>
+                  {loadedChartId && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={handleSaveAsNew} disabled={saving}>
+                        Save as New
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCopyLink}>
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy Shareable Link
+                      </Button>
+                    </>
+                  )}
                   <div className="flex-1" />
                   <Button size="sm" onClick={handleExportPng} disabled={exporting !== null}>
                     {exporting === 'png' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileImage className="w-4 h-4 mr-2" />}
@@ -276,6 +484,11 @@ const GanttPublisher = () => {
                     Export PDF
                   </Button>
                 </div>
+                {loadedChartId && (
+                  <p className="text-xs text-muted-foreground">
+                    Anyone who opens this chart's shareable link will be asked to log in, then land right here to edit and export it.
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -297,7 +510,7 @@ const GanttPublisher = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Adjust Dates</CardTitle>
                   <p className="text-xs text-muted-foreground">
-                    Changes here only affect this chart until you click "Save to project".
+                    Changes here are part of this chart (saved with it) until you click "Save to project" on a specific story.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">

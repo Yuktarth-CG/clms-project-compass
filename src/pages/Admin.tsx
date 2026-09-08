@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { isAuthenticated } from '@/lib/auth';
 import { Header } from '@/components/Header';
 import { ProjectForm } from '@/components/ProjectForm';
@@ -28,6 +28,7 @@ import { useDateFormat } from '@/contexts/DateFormatContext';
 
 const Admin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { projects, loading: projectsLoading, addProject, updateProject, deleteProject } = useProjects();
   const { risks, loading: risksLoading, addRisk, updateRisk, deleteRisk } = useRisks();
   const { accomplishments, loading: accomplishmentsLoading, addAccomplishment, updateAccomplishment, deleteAccomplishment } = useAccomplishments();
@@ -51,9 +52,9 @@ const Admin = () => {
 
   useEffect(() => {
     if (!isAuthenticated()) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
     }
-  }, [navigate]);
+  }, [navigate, location]);
 
   // Filter projects that have any dates for the timeline tab
   const timelineProjects = useMemo(() => {

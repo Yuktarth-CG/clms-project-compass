@@ -118,6 +118,45 @@ export type Database = {
         }
         Relationships: []
       }
+      gantt_charts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          overrides: Json
+          project_ids: string[]
+          range_end: string | null
+          range_start: string | null
+          subtitle: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          overrides?: Json
+          project_ids?: string[]
+          range_end?: string | null
+          range_start?: string | null
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          overrides?: Json
+          project_ids?: string[]
+          range_end?: string | null
+          range_start?: string | null
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           category: Database["public"]["Enums"]["project_category"]

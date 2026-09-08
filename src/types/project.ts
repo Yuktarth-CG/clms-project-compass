@@ -63,6 +63,19 @@ export interface Sprint {
   createdAt: string;
 }
 
+export interface SavedGanttChart {
+  id: string;
+  name: string;
+  title: string;
+  subtitle: string | null;
+  rangeStart: string | null;
+  rangeEnd: string | null;
+  projectIds: string[];
+  overrides: Record<string, Record<LifecycleStage, StageDate>>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const STAGE_LABELS: Record<LifecycleStage, string> = {
   requirement: 'Requirement Gathering',
   design: 'Design',
