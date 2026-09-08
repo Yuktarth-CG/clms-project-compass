@@ -20,9 +20,9 @@ interface PublisherGanttChartProps {
   rangeEnd: Date;
 }
 
-const NAME_COL_WIDTH = 300;
+const NAME_COL_WIDTH = 340;
 const CHART_WIDTH = 760;
-const ROW_HEIGHT = 36;
+const MIN_ROW_HEIGHT = 40;
 
 const stageColors: Record<LifecycleStage, string> = {
   requirement: '#4f6bed',
@@ -101,29 +101,29 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
             projects.map((project, idx) => (
               <div
                 key={project.id}
-                className={cn('flex border-b border-slate-100 last:border-b-0', idx % 2 === 1 && 'bg-slate-50/60')}
-                style={{ height: ROW_HEIGHT }}
+                className={cn('flex items-stretch border-b border-slate-100 last:border-b-0', idx % 2 === 1 && 'bg-slate-50/60')}
+                style={{ minHeight: MIN_ROW_HEIGHT }}
               >
                 <div
                   style={{ width: NAME_COL_WIDTH }}
-                  className="flex-shrink-0 px-3 flex items-center gap-2 border-r border-slate-200 min-w-0"
+                  className="flex-shrink-0 px-3 py-2 flex items-center gap-2 border-r border-slate-200 min-w-0"
                 >
                   <span
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white flex-shrink-0"
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm text-white flex-shrink-0 self-start mt-0.5"
                     style={{ backgroundColor: categoryColors[project.category] }}
                   >
                     {project.category.slice(0, 3).toUpperCase()}
                   </span>
                   {project.priority && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-slate-200 text-slate-700 flex-shrink-0">
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-sm bg-slate-200 text-slate-700 flex-shrink-0 self-start mt-0.5">
                       P{project.priority}
                     </span>
                   )}
-                  <span className={cn('text-xs font-medium truncate', project.discarded && 'line-through text-slate-400')}>
+                  <span className={cn('text-xs font-medium leading-snug whitespace-normal break-words', project.discarded && 'line-through text-slate-400')}>
                     {project.name}
                   </span>
                 </div>
-                <div style={{ width: CHART_WIDTH, height: ROW_HEIGHT }} className="relative">
+                <div style={{ width: CHART_WIDTH, minHeight: MIN_ROW_HEIGHT }} className="relative flex-shrink-0">
                   {months.map((m, i) => (
                     <div key={i} className="absolute top-0 bottom-0 border-r border-slate-100" style={{ left: m.left, width: m.width }} />
                   ))}
@@ -139,7 +139,7 @@ export const PublisherGanttChart = forwardRef<HTMLDivElement, PublisherGanttChar
                           left: bar.left,
                           width: bar.width,
                           top: '50%',
-                          transform: 'translateY(-50%)',
+                          marginTop: -7,
                           height: 14,
                           backgroundColor: stageColors[stage],
                           opacity: project.discarded ? 0.4 : 1,
