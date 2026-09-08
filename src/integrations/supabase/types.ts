@@ -138,6 +138,7 @@ export type Database = {
           release_start_date: string | null
           requirement_end_date: string | null
           requirement_start_date: string | null
+          sprint_id: string | null
           updated_at: string
         }
         Insert: {
@@ -159,6 +160,7 @@ export type Database = {
           release_start_date?: string | null
           requirement_end_date?: string | null
           requirement_start_date?: string | null
+          sprint_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -180,6 +182,7 @@ export type Database = {
           release_start_date?: string | null
           requirement_end_date?: string | null
           requirement_start_date?: string | null
+          sprint_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -247,6 +250,30 @@ export type Database = {
           id?: string
           severity?: Database["public"]["Enums"]["risk_severity"]
           text?: string
+        }
+        Relationships: []
+      }
+      sprints: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
         }
         Relationships: []
       }

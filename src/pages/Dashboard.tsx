@@ -15,9 +15,11 @@ import { useRisks } from '@/hooks/useRisks';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAccomplishments } from '@/hooks/useAccomplishments';
 import { useDashboardSettings } from '@/hooks/useDashboardSettings';
-import { LayoutGrid, TrendingUp, Loader2, Users } from 'lucide-react'; // Import Users icon
+import { useSprints } from '@/hooks/useSprints';
+import { LayoutGrid, TrendingUp, Loader2, Users, CalendarRange } from 'lucide-react'; // Import Users icon
 import { Switch } from '@/components/ui/switch'; // Import Switch
 import { Label } from '@/components/ui/label'; // Import Label
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Dashboard = () => {
   const { projects, loading: projectsLoading, updateProject, addProject } = useProjects();
@@ -25,9 +27,11 @@ const Dashboard = () => {
   const { teamMembers, loading: teamLoading } = useTeamMembers();
   const { accomplishments, loading: accomplishmentsLoading } = useAccomplishments();
   const { settings, updateSetting } = useDashboardSettings(); // Get updateSetting
+  const { sprints } = useSprints();
   const [categoryFilter, setCategoryFilter] = useState<ProjectCategory | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<ProjectPriority | 'all'>('all');
+  const [sprintFilter, setSprintFilter] = useState<string | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('monthly');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -61,6 +65,11 @@ const Dashboard = () => {
       filtered = filtered.filter((p) => p.priority === priorityFilter);
     }
 
+    // Sprint filter
+    if (sprintFilter !== 'all') {
+      filtered = filtered.filter((p) => p.sprintId === sprintFilter);
+    }
+
     // Search filter
     if (searchTerm) {
       const lowerSearch = searchTerm.toLowerCase();
@@ -68,7 +77,7 @@ const Dashboard = () => {
     }
 
     return filtered;
-  }, [timelineProjects, categoryFilter, statusFilter, priorityFilter, searchTerm]);
+  }, [timelineProjects, categoryFilter, statusFilter, priorityFilter, sprintFilter, searchTerm]);
 
   const categoryCounts = useMemo(() => ({
     all: projects.length,
@@ -161,7 +170,27 @@ const Dashboard = () => {
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
             />
-            <ViewToggle view={viewMode} onChange={setViewMode} />
+            <div className="flex items-center gap-3">
+              {sprints.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <CalendarRange className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <Select value={sprintFilter} onValueChange={setSprintFilter}>
+                    <SelectTrigger className="h-9 w-[180px]">
+                      <SelectValue placeholder="All sprints" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All sprints</SelectItem>
+                      {sprints.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <ViewToggle view={viewMode} onChange={setViewMode} />
+            </div>
           </div>
           <StageLegend />
         </div>

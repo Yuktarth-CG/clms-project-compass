@@ -6,12 +6,15 @@ import { ProjectForm } from '@/components/ProjectForm';
 import { RiskForm } from '@/components/RiskForm';
 import { AccomplishmentForm } from '@/components/AccomplishmentForm';
 import { TeamMemberForm } from '@/components/TeamMemberForm';
+import { SprintForm } from '@/components/SprintForm';
+import { SprintCard } from '@/components/SprintCard';
 import { DateFormatSelector } from '@/components/DateFormatSelector';
-import { Project, RiskItem, Accomplishment, TeamMember, CATEGORY_LABELS, STAGE_LABELS, STAGE_ORDER } from '@/types/project';
+import { Project, RiskItem, Accomplishment, TeamMember, Sprint, CATEGORY_LABELS, STAGE_LABELS, STAGE_ORDER } from '@/types/project';
 import { useProjects } from '@/hooks/useProjects';
 import { useRisks } from '@/hooks/useRisks';
 import { useAccomplishments } from '@/hooks/useAccomplishments';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useSprints } from '@/hooks/useSprints';
 import { useDashboardSettings } from '@/hooks/useDashboardSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Plus, Search, Pencil, Trash2, AlertTriangle, FolderKanban, Loader2, Settings, Trophy, Users, XCircle, Calendar } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, AlertTriangle, FolderKanban, Loader2, Settings, Trophy, Users, XCircle, Calendar, CalendarRange } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDateFormat } from '@/contexts/DateFormatContext';
 
@@ -29,19 +32,22 @@ const Admin = () => {
   const { risks, loading: risksLoading, addRisk, updateRisk, deleteRisk } = useRisks();
   const { accomplishments, loading: accomplishmentsLoading, addAccomplishment, updateAccomplishment, deleteAccomplishment } = useAccomplishments();
   const { teamMembers, loading: teamLoading, addTeamMember, updateTeamMember, deleteTeamMember } = useTeamMembers();
+  const { sprints, loading: sprintsLoading, addSprint, updateSprint, deleteSprint } = useSprints();
   const { settings, updateSetting } = useDashboardSettings();
   const { formatDate } = useDateFormat();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [projectFormOpen, setProjectFormOpen] = useState(false);
   const [riskFormOpen, setRiskFormOpen] = useState(false);
   const [accomplishmentFormOpen, setAccomplishmentFormOpen] = useState(false);
   const [teamMemberFormOpen, setTeamMemberFormOpen] = useState(false);
-  
+  const [sprintFormOpen, setSprintFormOpen] = useState(false);
+
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingRisk, setEditingRisk] = useState<RiskItem | null>(null);
   const [editingAccomplishment, setEditingAccomplishment] = useState<Accomplishment | null>(null);
   const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
+  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -131,7 +137,35 @@ const Admin = () => {
     }
   };
 
-  const loading = projectsLoading || risksLoading || accomplishmentsLoading || teamLoading;
+  const handleSaveSprint = async (data: Omit<Sprint, 'id' | 'createdAt'> & { id?: string }) => {
+    if (data.id) {
+      await updateSprint(data.id, data);
+    } else {
+      await addSprint(data);
+    }
+    setEditingSprint(null);
+    setSprintFormOpen(false);
+  };
+
+  const handleDeleteSprint = async (id: string) => {
+    if (confirm('Delete this sprint? Stories assigned to it will become unassigned.')) {
+      await deleteSprint(id);
+    }
+  };
+
+  const handleAssignStory = async (projectId: string, sprintId: string) => {
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+    await updateProject(projectId, { ...project, sprintId });
+  };
+
+  const handleUnassignStory = async (projectId: string) => {
+    const project = projects.find((p) => p.id === projectId);
+    if (!project) return;
+    await updateProject(projectId, { ...project, sprintId: null });
+  };
+
+  const loading = projectsLoading || risksLoading || accomplishmentsLoading || teamLoading || sprintsLoading;
 
   const ProjectCard = ({ project }: { project: Project }) => (
     <Card className={cn("hover:bg-secondary/30 transition-colors", project.discarded && "opacity-60")}>
@@ -220,6 +254,10 @@ const Admin = () => {
             <TabsList className="bg-secondary flex-wrap h-auto gap-1 p-1">
               <TabsTrigger value="projects">Timeline Projects ({timelineProjects.length})</TabsTrigger>
               {/* Pipeline tab removed, now a separate page */}
+              <TabsTrigger value="sprints" className="flex items-center gap-1">
+                <CalendarRange className="w-3.5 h-3.5" />
+                Sprints ({sprints.length})
+              </TabsTrigger>
               <TabsTrigger value="risks">Risks ({risks.length})</TabsTrigger>
               <TabsTrigger value="accomplishments" className="flex items-center gap-1">
                 <Trophy className="w-3.5 h-3.5" />
@@ -263,6 +301,41 @@ const Admin = () => {
                 ) : (
                   filteredTimelineProjects.map((project) => (
                     <ProjectCard key={project.id} project={project} />
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Sprints Tab */}
+            <TabsContent value="sprints" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">
+                  Define sprints, then search for stories to assign them to.
+                </p>
+                <Button onClick={() => { setEditingSprint(null); setSprintFormOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Sprint
+                </Button>
+              </div>
+
+              <div className="grid gap-3">
+                {sprints.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      No sprints created yet
+                    </CardContent>
+                  </Card>
+                ) : (
+                  sprints.map((sprint) => (
+                    <SprintCard
+                      key={sprint.id}
+                      sprint={sprint}
+                      allProjects={projects}
+                      onEdit={(s) => { setEditingSprint(s); setSprintFormOpen(true); }}
+                      onDelete={handleDeleteSprint}
+                      onAssign={handleAssignStory}
+                      onUnassign={handleUnassignStory}
+                    />
                   ))
                 )}
               </div>
@@ -526,6 +599,13 @@ const Admin = () => {
         onClose={() => { setTeamMemberFormOpen(false); setEditingTeamMember(null); }}
         onSave={handleSaveTeamMember}
         nextOrder={teamMembers.length}
+      />
+
+      <SprintForm
+        sprint={editingSprint}
+        open={sprintFormOpen}
+        onClose={() => { setSprintFormOpen(false); setEditingSprint(null); }}
+        onSave={handleSaveSprint}
       />
     </div>
   );

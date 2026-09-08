@@ -14,6 +14,7 @@ export interface Project {
   name: string;
   category: ProjectCategory;
   priority: ProjectPriority | null;
+  sprintId: string | null;
   stages: Record<LifecycleStage, StageDate>;
   discarded: boolean;
   jiraLink: string | null;
@@ -52,6 +53,14 @@ export interface DashboardSetting {
   settingKey: string;
   settingValue: boolean;
   updatedAt: string;
+}
+
+export interface Sprint {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  createdAt: string;
 }
 
 export const STAGE_LABELS: Record<LifecycleStage, string> = {

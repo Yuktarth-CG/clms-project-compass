@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar, Link, XCircle } from 'lucide-react';
 import { DatePicker } from '@/components/DatePicker';
+import { useSprints } from '@/hooks/useSprints';
 
 interface ProjectFormProps {
   project?: Project | null;
@@ -25,9 +26,11 @@ const emptyStages: Record<LifecycleStage, StageDate> = {
 };
 
 export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps) => {
+  const { sprints } = useSprints();
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ProjectCategory>('content');
   const [priority, setPriority] = useState<ProjectPriority | null>(null);
+  const [sprintId, setSprintId] = useState<string | null>(null);
   const [stages, setStages] = useState<Record<LifecycleStage, StageDate>>({ ...emptyStages });
   const [discarded, setDiscarded] = useState(false);
   const [jiraLink, setJiraLink] = useState('');
@@ -39,6 +42,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
       setName(project?.name || '');
       setCategory(project?.category || 'content');
       setPriority(project?.priority ?? null);
+      setSprintId(project?.sprintId ?? null);
       setStages(project?.stages || { ...emptyStages });
       setDiscarded(project?.discarded || false);
       setJiraLink(project?.jiraLink || '');
@@ -63,6 +67,7 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
       name,
       category,
       priority,
+      sprintId,
       stages,
       discarded,
       jiraLink: jiraLink || null,
@@ -129,6 +134,26 @@ export const ProjectForm = ({ project, open, onClose, onSave }: ProjectFormProps
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sprint">Sprint</Label>
+            <Select
+              value={sprintId ?? 'none'}
+              onValueChange={(v) => setSprintId(v === 'none' ? null : v)}
+            >
+              <SelectTrigger id="sprint">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Unassigned</SelectItem>
+                {sprints.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} ({s.startDate} → {s.endDate})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
